@@ -4,8 +4,6 @@ FROM node:18-alpine AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-frontend/package-lock.json
-frontend/package.json
 
 RUN npm install
 
