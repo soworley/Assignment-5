@@ -1,26 +1,23 @@
-cd backened
-npm install
-npm start
-# Use Node 18 Alpine image
 FROM node:18-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package metadata and install dependencies
 COPY package*.json ./
+RUN npm install --production
 
-# Install dependencies
-RUN npm install
-
-# Copy all backend files
+# Copy application source
 COPY . .
 
-# Create directory for SQLite database
+# Ensure directory for SQLite DB exists and persistable
 RUN mkdir -p /app/data
+VOLUME ["/app/data"]
 
 # Expose backend port
 EXPOSE 5000
 
-# Start the app
+ENV NODE_ENV=production
+
+# Start the application
 CMD ["npm", "start"]
