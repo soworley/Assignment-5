@@ -4,36 +4,45 @@ services:
   database:
     image: postgres:13
     environment:
-      - POSTGRES_DB=myapp
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      POSTGRES_DB: myapp
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
     volumes:
       - db_data:/var/lib/postgresql/data
+    networks:
+      - myapp_network
 
   api:
     build: ./backend
     ports:
       - "5000:5000"
-    volumes:
-      - app_data:/app/data
     environment:
-      - NODE_ENV=production
+      NODE_ENV: production
+      DATABASE_URL: postgres://user:password@database:5432/myapp
     depends_on:
       - database
+    volumes:
+      - app_data:/app/data
+    networks:
+      - myapp_network
 
   web:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
       - "3000:80"
+    environment:
+      - REACT_APP_API_URL=http://api:5000
     depends_on:
       - api
-    environment:
-      - REACT_APP_API_URL=http://localhost:5000
+    networks:
+      - myapp_network
 
 volumes:
   app_data:
   db_data:
 
 networks:
-  default:
-    name: myapp_network
+  myapp_network:
+    driver: bridge
