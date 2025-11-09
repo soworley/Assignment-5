@@ -5,6 +5,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 frontend/package-lock.json
+frontend/package.json
 
 RUN npm install
 
