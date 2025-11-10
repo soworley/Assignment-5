@@ -1,21 +1,26 @@
-# Stage 1: Build
-FROM node:18-alpine AS build
+FROM node:18-alpine
 
+# Set working directory
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm install
+# Copy package metadata and install dependencies
+COPY package*.json ./
+RUN npm install --production
 
+# Copy application source
 COPY . .
 
-# Build production-ready frontend
-RUN npm run build
+# Ensure directory for SQLite DB exists and persistable
+RUN mkdir -p /app/data
+VOLUME ["/app/data"]
 
-# Stage 2: Serve with Nginx
-FROM nginx:alpine
+# Expose backend port
+EXPOSE 5000
 
-# Copy built files from previous stage
-COPY --from=build /app/dist /usr/share/nginx/html
+ENV NODE_ENV=production
+
+# Start the application
+CMD ["npm", "start"]
 
 # Expose Nginx port
 EXPOSE 80
