@@ -1,51 +1,57 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const express = require('express');
+const cors = require('cors');
+const app = express();
+const PORT = process.env.PORT || 5000;
 
-const dbPath = path.join(__dirname, 'recipes.db');
-const db = new sqlite3.Database(dbPath);
+app.use(cors());
+app.use(express.json());
 
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS recipes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      ingredients TEXT NOT NULL,
-      instructions TEXT NOT NULL,
-      cookTime TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+// In-memory storage
+let tasks = [
+  { id: 1, title: 'Learn Docker', completed: false, createdAt: new Date().toISOString() },
+  { id: 2, title: 'Deploy to Cloud Run', completed: false, createdAt: new Date().toISOString() },
+  { id: 3, title: 'Set up CI/CD', completed: true, createdAt: new Date().toISOString() }
+];
 
-  db.get("SELECT COUNT(*) as count FROM recipes", (err, row) => {
-    if (err) {
-      console.error('Error checking recipes count:', err);
-      return;
-    }
-    
-    if (row.count === 0) {
-      console.log('Adding sample recipes...');
-      const sampleRecipes = [
-        {
-          name: 'Classic Chocolate Chip Cookies',
-          ingredients: '2 cups all-purpose flour\n1 cup butter, softened\n3/4 cup brown sugar\n1/2 cup white sugar\n2 large eggs\n2 tsp vanilla extract\n1 tsp baking soda\n1 tsp salt\n2 cups chocolate chips',
-          instructions: 'Preheat oven to 375°F. Mix butter and sugars until creamy. Beat in eggs and vanilla. Combine dry ingredients and mix into butter mixture. Stir in chocolate chips. Drop rounded tablespoons onto ungreased cookie sheets. Bake 9-11 minutes until golden brown.',
-          cookTime: '25 minutes'
-        },
-        {
-          name: 'Simple Pasta Carbonara',
-          ingredients: '400g spaghetti\n200g pancetta or bacon\n4 large eggs\n100g Parmesan cheese, grated\n2 cloves garlic, minced\nSalt and black pepper\n2 tbsp olive oil',
-          instructions: 'Cook pasta according to package directions. Meanwhile, cook pancetta until crispy. Whisk eggs with Parmesan, salt, and pepper. Drain pasta, reserving 1 cup pasta water. Quickly toss hot pasta with egg mixture and pancetta. Add pasta water as needed for creamy consistency.',
-          cookTime: '20 minutes'
-        }
-      ];
-
-      const stmt = db.prepare("INSERT INTO recipes (name, ingredients, instructions, cookTime) VALUES (?, ?, ?, ?)");
-      sampleRecipes.forEach(recipe => {
-        stmt.run(recipe.name, recipe.ingredients, recipe.instructions, recipe.cookTime);
-      });
-      stmt.finalize();
-    }
-  });
+// Get all tasks
+app.get('/api/tasks', (req, res) => {
+  res.json(tasks);
 });
 
-module.exports = db;
+// Add new task
+app.post('/api/tasks', (req, res) => {
+  const newTask = {
+    id: Date.now(),
+    title: req.body.title,
+    completed: false,
+    createdAt: new Date().toISOString()
+  };
+  tasks.push(newTask);
+  res.status(201).json(newTask);
+});
+
+// Toggle task completion
+app.put('/api/tasks/:id', (req, res) => {
+  const task = tasks.find(t => t.id === parseInt(req.params.id));
+  if (task) {
+    task.completed = !task.completed;
+    res.json(task);
+  } else {
+    res.status(404).json({ error: 'Task not found' });
+  }
+});
+
+// Delete task
+app.delete('/api/tasks/:id', (req, res) => {
+  const taskIndex = tasks.findIndex(t => t.id === parseInt(req.params.id));
+  if (taskIndex !== -1) {
+    tasks.splice(taskIndex, 1);
+    res.status(204).send();
+  } else {
+    res.status(404).json({ error: 'Task not found' });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
